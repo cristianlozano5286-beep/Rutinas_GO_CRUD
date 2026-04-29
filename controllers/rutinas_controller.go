@@ -93,3 +93,21 @@ func CreateRutina(w http.ResponseWriter, r *http.Request) {
 
 	respondJSON(w, 201, ru)
 }
+// UpdateRutina actualiza una rutina por id_usuario y nombre
+func UpdateRutina(w http.ResponseWriter, r *http.Request) {
+	idUsuario := mux.Vars(r)["id_usuario"]
+	var ru models.Rutina
+	json.NewDecoder(r.Body).Decode(&ru)
+
+	_, err := config.DB.Exec(
+		`UPDATE rutinas SET nombre=$1, descripcion=$2, objetivo=$3, activo=$4
+		 WHERE id_usuario=$5`,
+		ru.Nombre, ru.Descripcion, ru.Objetivo, ru.Activo, idUsuario,
+	)
+	if err != nil {
+		respondJSON(w, 500, map[string]string{"error": err.Error()})
+		return
+	}
+
+	respondJSON(w, 200, map[string]string{"message": "Rutina actualizada correctamente"})
+}
