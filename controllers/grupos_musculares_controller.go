@@ -77,3 +77,21 @@ func CreateGrupoMuscular(w http.ResponseWriter, r *http.Request) {
 
 	respondJSON(w, 201, g)
 }
+
+// UpdateGrupoMuscular actualiza un grupo muscular
+func UpdateGrupoMuscular(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+	var g models.GrupoMuscular
+	json.NewDecoder(r.Body).Decode(&g)
+
+	_, err := config.DB.Exec(
+		"UPDATE grupos_musculares SET nombre=$1, descripcion=$2, activo=$3 WHERE id=$4",
+		g.Nombre, g.Descripcion, g.Activo, id,
+	)
+	if err != nil {
+		respondJSON(w, 500, map[string]string{"error": err.Error()})
+		return
+	}
+
+	respondJSON(w, 200, map[string]string{"message": "Grupo muscular actualizado correctamente"})
+}
