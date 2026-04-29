@@ -8,7 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 )
-// GetAllRutinas obtener todas las rutinas c
+// GetAllRutinas obtener todas las rutinas 
 func GetAllRutinas(w http.ResponseWriter, r *http.Request) {
 	query := `SELECT id_usuario, nombre, descripcion, objetivo, activo, fecha_modificacion, fecha_creacion
 	           FROM rutinas WHERE 1=1`
@@ -39,6 +39,34 @@ func GetAllRutinas(w http.ResponseWriter, r *http.Request) {
 		var ru models.Rutina
 		rows.Scan(&ru.IDUsuario, &ru.Nombre, &ru.Descripcion, &ru.Objetivo, &ru.Activo, &ru.FechaModificacion, &ru.FechaCreacion)
 		list = append(list, ru)
+	}
+
+	respondJSON(w, 200, list)
+}
+// GetRutinaByUsuario obtiene rutinas por ID de usuario
+func GetRutinaByUsuario(w http.ResponseWriter, r *http.Request) {
+	idUsuario := mux.Vars(r)["id_usuario"]
+
+	rows, err := config.DB.Query(
+		`SELECT id_usuario, nombre, descripcion, objetivo, activo, fecha_modificacion, fecha_creacion
+		 FROM rutinas WHERE id_usuario = $1`, idUsuario,
+	)
+	if err != nil {
+		respondJSON(w, 500, map[string]string{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	var list []models.Rutina
+	for rows.Next() {
+		var ru models.Rutina
+		rows.Scan(&ru.IDUsuario, &ru.Nombre, &ru.Descripcion, &ru.Objetivo, &ru.Activo, &ru.FechaModificacion, &ru.FechaCreacion)
+		list = append(list, ru)
+	}
+
+	if len(list) == 0 {
+		respondJSON(w, 404, map[string]string{"error": "No se encontraron rutinas para este usuario"})
+		return
 	}
 
 	respondJSON(w, 200, list)
