@@ -49,3 +49,29 @@ func GetAllEjercicios(w http.ResponseWriter, r *http.Request) {
 
 	respondJSON(w, 200, list)
 }
+// GetEjercicioByID obtiene un ejercicio por ID
+func GetEjercicioByID(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+	var e models.Ejercicio
+
+	err := config.DB.QueryRow(
+		`SELECT id, grupo_muscular_id, nombre, descripcion_corta, descripcion_larga,
+		 posicion_inicial, ejecucion, consejos, nivel, activo, fecha_modificacion, fecha_creacion
+		 FROM ejercicios WHERE id = $1`, id,
+	).Scan(
+		&e.ID, &e.GrupoMuscularID, &e.Nombre, &e.DescripcionCorta, &e.DescripcionLarga,
+		&e.PosicionInicial, &e.Ejecucion, &e.Consejos, &e.Nivel, &e.Activo,
+		&e.FechaModificacion, &e.FechaCreacion,
+	)
+
+	if err == sql.ErrNoRows {
+		respondJSON(w, 404, map[string]string{"error": "Ejercicio no encontrado"})
+		return
+	}
+	if err != nil {
+		respondJSON(w, 500, map[string]string{"error": err.Error()})
+		return
+	}
+
+	respondJSON(w, 200, e)
+}
