@@ -119,3 +119,16 @@ func UpdateEjercicio(w http.ResponseWriter, r *http.Request) {
 
 	respondJSON(w, 200, map[string]string{"message": "Ejercicio actualizado correctamente"})
 }
+
+// DeleteEjercicio elimina un ejercicio
+func DeleteEjercicio(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+
+	_, err := config.DB.Exec("DELETE FROM ejercicios WHERE id=$1", id)
+	if err != nil {
+		respondJSON(w, 500, map[string]string{"error": err.Error()})
+		return
+	}
+
+	respondJSON(w, 200, map[string]string{"message": "Ejercicio eliminado correctamente"})
+}
