@@ -111,3 +111,15 @@ func UpdateRutina(w http.ResponseWriter, r *http.Request) {
 
 	respondJSON(w, 200, map[string]string{"message": "Rutina actualizada correctamente"})
 }
+// DeleteRutina elimina las rutinas 
+func DeleteRutina(w http.ResponseWriter, r *http.Request) {
+	idUsuario := mux.Vars(r)["id_usuario"]
+
+	_, err := config.DB.Exec("DELETE FROM rutinas WHERE id_usuario=$1", idUsuario)
+	if err != nil {
+		respondJSON(w, 500, map[string]string{"error": err.Error()})
+		return
+	}
+
+	respondJSON(w, 200, map[string]string{"message": "Rutina(s) eliminada(s) correctamente"})
+}
