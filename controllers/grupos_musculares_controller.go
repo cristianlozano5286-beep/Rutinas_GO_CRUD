@@ -56,3 +56,24 @@ func GetGrupoMuscularByID(w http.ResponseWriter, r *http.Request) {
 
 	respondJSON(w, 200, g)
 }
+
+// CreateGrupoMuscular crea un nuevo grupo muscular
+func CreateGrupoMuscular(w http.ResponseWriter, r *http.Request) {
+	var g models.GrupoMuscular
+	if err := json.NewDecoder(r.Body).Decode(&g); err != nil {
+		respondJSON(w, 400, map[string]string{"error": "JSON inválido"})
+		return
+	}
+
+	err := config.DB.QueryRow(
+		"INSERT INTO grupos_musculares (nombre, descripcion, activo) VALUES ($1, $2, $3) RETURNING id, fecha_modificacion, fecha_creacion",
+		g.Nombre, g.Descripcion, g.Activo,
+	).Scan(&g.ID, &g.FechaModificacion, &g.FechaCreacion)
+
+	if err != nil {
+		respondJSON(w, 500, map[string]string{"error": err.Error()})
+		return
+	}
+
+	respondJSON(w, 201, g)
+}
