@@ -34,3 +34,25 @@ func GetAllGruposMusculares(w http.ResponseWriter, r *http.Request) {
 
 	respondJSON(w, 200, list)
 }
+
+// GetGrupoMuscularByID obtener un grupo muscular por ID
+func GetGrupoMuscularByID(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+	var g models.GrupoMuscular
+
+	err := config.DB.QueryRow(
+		"SELECT id, nombre, descripcion, activo, fecha_modificacion, fecha_creacion FROM grupos_musculares WHERE id = $1",
+		id,
+	).Scan(&g.ID, &g.Nombre, &g.Descripcion, &g.Activo, &g.FechaModificacion, &g.FechaCreacion)
+
+	if err == sql.ErrNoRows {
+		respondJSON(w, 404, map[string]string{"error": "Grupo muscular no encontrado"})
+		return
+	}
+	if err != nil {
+		respondJSON(w, 500, map[string]string{"error": err.Error()})
+		return
+	}
+
+	respondJSON(w, 200, g)
+}
