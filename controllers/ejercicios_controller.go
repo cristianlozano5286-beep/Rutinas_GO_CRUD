@@ -99,3 +99,23 @@ func CreateEjercicio(w http.ResponseWriter, r *http.Request) {
 
 	respondJSON(w, 201, e)
 }
+// UpdateEjercicio actualiza un ejercicio
+func UpdateEjercicio(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+	var e models.Ejercicio
+	json.NewDecoder(r.Body).Decode(&e)
+
+	_, err := config.DB.Exec(
+		`UPDATE ejercicios SET grupo_muscular_id=$1, nombre=$2, descripcion_corta=$3,
+		 descripcion_larga=$4, posicion_inicial=$5, ejecucion=$6, consejos=$7, nivel=$8, activo=$9
+		 WHERE id=$10`,
+		e.GrupoMuscularID, e.Nombre, e.DescripcionCorta, e.DescripcionLarga,
+		e.PosicionInicial, e.Ejecucion, e.Consejos, e.Nivel, e.Activo, id,
+	)
+	if err != nil {
+		respondJSON(w, 500, map[string]string{"error": err.Error()})
+		return
+	}
+
+	respondJSON(w, 200, map[string]string{"message": "Ejercicio actualizado correctamente"})
+}
