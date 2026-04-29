@@ -71,3 +71,25 @@ func GetRutinaByUsuario(w http.ResponseWriter, r *http.Request) {
 
 	respondJSON(w, 200, list)
 }
+// CreateRutina crea una nueva rutina
+func CreateRutina(w http.ResponseWriter, r *http.Request) {
+	var ru models.Rutina
+	if err := json.NewDecoder(r.Body).Decode(&ru); err != nil {
+		respondJSON(w, 400, map[string]string{"error": "JSON inválido"})
+		return
+	}
+
+	err := config.DB.QueryRow(
+		`INSERT INTO rutinas (id_usuario, nombre, descripcion, objetivo, activo)
+		 VALUES ($1,$2,$3,$4,$5)
+		 RETURNING fecha_modificacion, fecha_creacion`,
+		ru.IDUsuario, ru.Nombre, ru.Descripcion, ru.Objetivo, ru.Activo,
+	).Scan(&ru.FechaModificacion, &ru.FechaCreacion)
+
+	if err != nil {
+		respondJSON(w, 500, map[string]string{"error": err.Error()})
+		return
+	}
+
+	respondJSON(w, 201, ru)
+}
