@@ -75,3 +75,27 @@ func GetEjercicioByID(w http.ResponseWriter, r *http.Request) {
 
 	respondJSON(w, 200, e)
 }
+// CreateEjercicio crea un nuevo ejercicio
+func CreateEjercicio(w http.ResponseWriter, r *http.Request) {
+	var e models.Ejercicio
+	if err := json.NewDecoder(r.Body).Decode(&e); err != nil {
+		respondJSON(w, 400, map[string]string{"error": "JSON inválido"})
+		return
+	}
+
+	err := config.DB.QueryRow(
+		`INSERT INTO ejercicios (grupo_muscular_id, nombre, descripcion_corta, descripcion_larga,
+		 posicion_inicial, ejecucion, consejos, nivel, activo)
+		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+		 RETURNING id, fecha_modificacion, fecha_creacion`,
+		e.GrupoMuscularID, e.Nombre, e.DescripcionCorta, e.DescripcionLarga,
+		e.PosicionInicial, e.Ejecucion, e.Consejos, e.Nivel, e.Activo,
+	).Scan(&e.ID, &e.FechaModificacion, &e.FechaCreacion)
+
+	if err != nil {
+		respondJSON(w, 500, map[string]string{"error": err.Error()})
+		return
+	}
+
+	respondJSON(w, 201, e)
+}
