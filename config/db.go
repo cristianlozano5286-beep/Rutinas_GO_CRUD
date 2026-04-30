@@ -7,6 +7,9 @@ import (
 
 	_ "github.com/lib/pq"
 )
+
+var DB *sql.DB
+
 // ConnectDB establece conexión con PostgreSQL
 func ConnectDB() {
 	host     := "localhost"

@@ -11,7 +11,7 @@ import (
 )
 // GetAllGruposMusculares obtener grupos musculares 
 func GetAllGruposMusculares(w http.ResponseWriter, r *http.Request) {
-	query := "SELECT id, nombre, descripcion, activo, fecha_modificacion, fecha_creacion FROM grupos_musculares WHERE 1=1"
+	query := "SELECT id, nombre, descripcion, activo, fecha_modificacion, fecha_creacion FROM rutinas.grupos_musculares WHERE 1=1"
 
 	nombre := r.URL.Query().Get("nombre")
 	if nombre != "" {
@@ -41,7 +41,7 @@ func GetGrupoMuscularByID(w http.ResponseWriter, r *http.Request) {
 	var g models.GrupoMuscular
 
 	err := config.DB.QueryRow(
-		"SELECT id, nombre, descripcion, activo, fecha_modificacion, fecha_creacion FROM grupos_musculares WHERE id = $1",
+		"SELECT id, nombre, descripcion, activo, fecha_modificacion, fecha_creacion FROM rutinas.grupos_musculares WHERE id = $1",
 		id,
 	).Scan(&g.ID, &g.Nombre, &g.Descripcion, &g.Activo, &g.FechaModificacion, &g.FechaCreacion)
 
@@ -66,7 +66,7 @@ func CreateGrupoMuscular(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := config.DB.QueryRow(
-		"INSERT INTO grupos_musculares (nombre, descripcion, activo) VALUES ($1, $2, $3) RETURNING id, fecha_modificacion, fecha_creacion",
+		"INSERT INTO rutinas.grupos_musculares (nombre, descripcion, activo) VALUES ($1, $2, $3) RETURNING id, fecha_modificacion, fecha_creacion",
 		g.Nombre, g.Descripcion, g.Activo,
 	).Scan(&g.ID, &g.FechaModificacion, &g.FechaCreacion)
 
@@ -82,10 +82,13 @@ func CreateGrupoMuscular(w http.ResponseWriter, r *http.Request) {
 func UpdateGrupoMuscular(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	var g models.GrupoMuscular
-	json.NewDecoder(r.Body).Decode(&g)
+	if err := json.NewDecoder(r.Body).Decode(&g); err != nil {
+		respondJSON(w, 400, map[string]string{"error": "JSON inválido"})
+		return
+	}
 
 	_, err := config.DB.Exec(
-		"UPDATE grupos_musculares SET nombre=$1, descripcion=$2, activo=$3 WHERE id=$4",
+		"UPDATE rutinas.grupos_musculares SET nombre=$1, descripcion=$2, activo=$3 WHERE id=$4",
 		g.Nombre, g.Descripcion, g.Activo, id,
 	)
 	if err != nil {
@@ -100,7 +103,7 @@ func UpdateGrupoMuscular(w http.ResponseWriter, r *http.Request) {
 func DeleteGrupoMuscular(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 
-	_, err := config.DB.Exec("DELETE FROM grupos_musculares WHERE id=$1", id)
+	_, err := config.DB.Exec("DELETE FROM rutinas.grupos_musculares WHERE id=$1", id)
 	if err != nil {
 		respondJSON(w, 500, map[string]string{"error": err.Error()})
 		return

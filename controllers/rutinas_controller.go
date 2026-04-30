@@ -10,8 +10,8 @@ import (
 )
 // GetAllRutinas obtener todas las rutinas 
 func GetAllRutinas(w http.ResponseWriter, r *http.Request) {
-	query := `SELECT id_usuario, nombre, descripcion, objetivo, activo, fecha_modificacion, fecha_creacion
-	           FROM rutinas WHERE 1=1`
+	query := `SELECT id_usuario, nombre, descripcion, objetivo, dia, activo, fecha_modificacion, fecha_creacion
+          FROM rutinas.rutinas WHERE 1=1`
 
 	nombre := r.URL.Query().Get("nombre")
 	objetivo := r.URL.Query().Get("objetivo")
@@ -48,8 +48,8 @@ func GetRutinaByUsuario(w http.ResponseWriter, r *http.Request) {
 	idUsuario := mux.Vars(r)["id_usuario"]
 
 	rows, err := config.DB.Query(
-		`SELECT id_usuario, nombre, descripcion, objetivo, activo, fecha_modificacion, fecha_creacion
-		 FROM rutinas WHERE id_usuario = $1`, idUsuario,
+		`SELECT id_usuario, nombre, descripcion, objetivo, dia, activo, fecha_modificacion, fecha_creacion
+          FROM rutinas.rutinas WHERE id_usuario = $1`, idUsuario,
 	)
 	if err != nil {
 		respondJSON(w, 500, map[string]string{"error": err.Error()})
@@ -78,14 +78,39 @@ func CreateRutina(w http.ResponseWriter, r *http.Request) {
 		respondJSON(w, 400, map[string]string{"error": "JSON inválido"})
 		return
 	}
+// Definimos el query
+    query := `INSERT INTO rutinas.rutinas (id_usuario, nombre, descripcion, objetivo, dia, activo)
+              VALUES ($1, $2, $3, $4, $5, $6)
+              RETURNING id, id_usuario, nombre, descripcion, objetivo, dia, activo, fecha_modificacion, fecha_creacion`
 
-	err := config.DB.QueryRow(
-		`INSERT INTO rutinas (id_usuario, nombre, descripcion, objetivo, activo)
-		 VALUES ($1,$2,$3,$4,$5)
-		 RETURNING fecha_modificacion, fecha_creacion`,
-		ru.IDUsuario, ru.Nombre, ru.Descripcion, ru.Objetivo, ru.Activo,
-	).Scan(&ru.FechaModificacion, &ru.FechaCreacion)
+    // Ejecutamos y escaneamos los resultados en el objeto 'ru'
+   // 1. Ejecutamos el QueryRow pasándole el query y los datos de la rutina (ru)
+// 2. PEGADO al paréntesis de cierre, llamamos al .Scan()
+err := config.DB.QueryRow(query, 
+    ru.IDUsuario, 
+    ru.Nombre, 
+    ru.Descripcion, 
+    ru.Objetivo, 
+    ru.Dia, 
+    ru.Activo,
+).Scan(
+    &ru.ID, 
+    &ru.IDUsuario, 
+    &ru.Nombre, 
+    &ru.Descripcion, 
+    &ru.Objetivo, 
+    &ru.Dia, 
+    &ru.Activo, 
+    &ru.FechaModificacion, 
+    &ru.FechaCreacion,
+)
 
+    if err != nil {
+        respondJSON(w, 500, map[string]string{"error": "Error al insertar la rutina: " + err.Error()})
+        return
+    }
+
+    respondJSON(w, 201, ru)
 	if err != nil {
 		respondJSON(w, 500, map[string]string{"error": err.Error()})
 		return
@@ -97,11 +122,15 @@ func CreateRutina(w http.ResponseWriter, r *http.Request) {
 func UpdateRutina(w http.ResponseWriter, r *http.Request) {
 	idUsuario := mux.Vars(r)["id_usuario"]
 	var ru models.Rutina
-	json.NewDecoder(r.Body).Decode(&ru)
+	if err := json.NewDecoder(r.Body).Decode(&ru); err != nil {
+		respondJSON(w, 400, map[string]string{"error": "JSON inválido"})
+		return
+	}
 
 	_, err := config.DB.Exec(
-		`UPDATE rutinas SET nombre=$1, descripcion=$2, objetivo=$3, activo=$4
-		 WHERE id_usuario=$5`,
+		`UPDATE rutinas.rutinas 
+          SET nombre=$1, descripcion=$2, objetivo=$3, dia=$4, activo=$5
+          WHERE id_usuario=$6`,
 		ru.Nombre, ru.Descripcion, ru.Objetivo, ru.Activo, idUsuario,
 	)
 	if err != nil {
@@ -115,7 +144,7 @@ func UpdateRutina(w http.ResponseWriter, r *http.Request) {
 func DeleteRutina(w http.ResponseWriter, r *http.Request) {
 	idUsuario := mux.Vars(r)["id_usuario"]
 
-	_, err := config.DB.Exec("DELETE FROM rutinas WHERE id_usuario=$1", idUsuario)
+	_, err := config.DB.Exec("DELETE FROM rutinas.rutinas WHERE id_usuario=$1", idUsuario)
 	if err != nil {
 		respondJSON(w, 500, map[string]string{"error": err.Error()})
 		return
